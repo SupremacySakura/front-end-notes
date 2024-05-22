@@ -104,3 +104,87 @@ path.join('03','dist/js','index.js')
    ```
 
    
+
+## URL中的端口号
+
+URL:统一资源定位符,简称网址,用于访问服务器里的资源
+
+端口号:标记服务器里不同功能的**服务程序**
+
+端口号范围:0-65535之间的任意整数
+
+| http | ://  | hmajax.itheima.net | :    | 80     | /api/province |
+| ---- | ---- | ------------------ | ---- | ------ | ------------- |
+| 协议 |      | 域名               |      | 端口号 | 资源路径      |
+
+注意:http协议,**默认**访问**80**端口
+
+### 常见的服务程序
+
+**Web服务程序**:用于提供网上信息浏览功能
+
+注意:0-1023和一些特定的端口号被占用,我们自己编写的服务程序请避开使用
+
+## http模块---创建Web服务
+
+需求:创建Web服务并响应内容给浏览器
+
+步骤:
+
+1. 加载**http模块**,创建Web服务对象
+2. 监听**request**请求事件,设置响应体和响应头
+3. 配置**端口号**并**启动**Web服务
+4. 浏览器请求 http://localhost:3030 测试 (localhost:固定代表本机的域名)
+
+```javascript
+//1.加载http模块,创建Web服务对象
+const http =require('http')
+const server = http.createServer()
+//2.监听request请求事件,设置响应体和响应头
+server.on('request',(req,res) => {
+//设置响应头:内容类型,普通文本:编码格式为utf-8
+    res.setHeader('Content-Type','text/plain;charset=utf-8')
+    res.end('你好,欢迎使用node.js创建的web服务')
+})
+//3.配置端口号并启动Web服务
+server.listen(3000,() => {
+    console.log('web服务已启动')
+})
+```
+
+## Node.js模块化
+
+**什么是模块化?**
+
+**定义**:CommonJS模块是为Node.js打包JavaScript代码的原始方式,Node.js还支持浏览器和其他JavaScript运行时使用的ECMAScript模块标准.**在Node.js中,每个文件都被视为一个单独的模块**
+
+概念:项目是由很多模块文件组成的
+
+好处:提高代码复用性,按需加载,**独立作用域**
+
+使用:需要标准语法**导出**和**导入**进行使用
+
+### CommonJS标准
+
+需求:定义utils.js模块,封装基地址和求数组综合函数
+
+使用:
+
+1. **导出:module.exports = {}**
+2. **导入:require('模块名或路径')**
+
+模块名或路径:
+
+- 内置模块:直接写名字(例如:fs,path,http)
+- 自定义模块:写模块文件名路径(例如:./utils.js)
+
+```javascript
+const baseURL = 'http://hmajax.itheima.net'
+const getArraySum = arr => arr.reduce((sum,val) => sum+=val,0)
+
+module.exports = {
+    对外属性名1:baseURL,
+    对外属性名2:getArraySum
+}
+```
+
