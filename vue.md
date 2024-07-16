@@ -314,7 +314,86 @@ v-bind对于样式控制的增强-操作class
 - 下拉菜单 select→value
 - ...
 
-## 指令的修饰符
+#### v-model原理
+
+**原理**:v-model本质上是一个**语法糖**.例如应用在输入框上,就是**value属性**和**input事件**的合写.
+
+作用:提供数据的双向绑定
+
+1. 数据变,视图跟着变**:value**
+2. 视图变,数据跟着变**@input**
+
+注意:**$event**用在模板中,获取事件的形参
+
+```vue
+<template>
+	<div>
+		<input v-model="msg" type="text">
+        <input :value="msg" @input="msg=$event.target.value">
+    </div>
+</template>
+```
+
+#### 表单类组件封装&简化v-model简化代码
+
+(1).表单类组件**封装**
+
+1. **父传子**:数据 应该是父组件**props**传递过来的,v-model**拆解**绑定数据
+2. **子传父**:监听输入,子传父传值给父组件修改
+
+```vue
+//父组件
+<BaseSelect :cityId="selectId" @事件名="selectId=$event"></BaseSelect>
+```
+
+```vue
+//子组件
+<select :value="cityId" @change="handleChange">
+    
+</select>
+```
+
+```vue
+//子组件
+props:{
+	cityId:string
+}
+```
+
+```vue
+methods:{
+	handleChange(e){
+		this.$emit('事件名',e.target.value)
+	}
+}
+```
+
+#### .sync修饰符
+
+**作用**:可以实现**子组件**与**父组件数据**的**双向绑定**,简化代码
+
+**特点**:prop属性名,可以**自定义**,并非固定为**value**
+
+**场景**:封装弹框类的基础组件,**visible属性** true为显示 false为隐藏
+
+**本质**:就是 **:属性名 **和 **@update:属性名** 合写
+
+```vue
+//父组件
+<BaseDialog :visible.sync="isShow"></BaseDialog>
+-------------------------------------------------
+<BaseDialog :value="isShow" @update:visible="siShow=$event"></BaseDialog>
+```
+
+```vue
+//子组件
+props:{
+	visible:Boolean
+},
+this.$emit('update:visible',false)
+```
+
+### 指令的修饰符
 
 指令修饰符
 
@@ -323,6 +402,81 @@ v-bind对于样式控制的增强-操作class
 1. 按键修饰符:**@keyup.enter**→键盘回车监听
 2. v-model修饰符:**v-model.trim**→去除首位空格;**v-model.number**→转数字
 3. 事件修饰符:@事件名.stop→阻止冒泡;@事件名.prevent→阻止默认行为
+
+### 自定义指令
+
+#### 全局自定义指令
+
+Vue2:
+
+```vue
+// 注册一个全局自定义指令 `v-focus`
+Vue.directive('focus', {
+  // 当被绑定的元素挂载到 DOM 中时...
+  inserted(el) {
+    // 聚焦元素
+    el.focus()
+  }
+})
+```
+
+Vue3:
+
+```vue
+const app = Vue.createApp({})
+// 注册一个全局自定义指令 `v-focus`
+app.directive('focus', {
+  // 当被绑定的元素挂载到 DOM 中时...
+  inserted(el) {
+    // 聚焦元素
+    el.focus()
+  }
+})
+```
+
+#### 局部自定义指令
+
+```vue
+directives: {
+  focus: {
+    // 指令的定义
+    inserted(el) {
+      el.focus();
+    }
+  }
+}
+```
+
+##### 钩子函数
+
+- `bind`：只调用一次，指令第一次绑定到元素时调用。在这里可以进行一次性的初始化设置。
+- `inserted`：被绑定元素插入父节点时调用 (仅保证父节点存在，但不一定已被插入文档中)。
+- `update`：所在组件的 VNode 更新时调用，**但是可能发生在其子 VNode 更新之前**。指令的值可能发生了改变，也可能没有。但是你可以通过比较更新前后的值来忽略不必要的模板更新。
+- `componentUpdated`：指令所在组件的 VNode **及其子 VNode** 全部更新后调用。
+- `unbind`：只调用一次，指令与元素解绑时调用。
+
+##### 钩子函数参数
+
+- `el`：指令所绑定的元素，可以用来直接操作 DOM。
+
+- `binding`：一个对象，包含以下 property：
+
+  - `name`：指令名，不包括 `v-` 前缀。
+
+  - `value`：指令的绑定值，例如：`v-my-directive="1 + 1"` 中，绑定值为 `2`。
+
+  - `oldValue`：指令绑定的前一个值，仅在 `update` 和 `componentUpdated` 钩子中可用。无论值是否改变都可用。
+
+  - `expression`：字符串形式的指令表达式。例如 `v-my-directive="1 + 1"` 中，表达式为 `"1 + 1"`。
+
+  - `arg`：传给指令的参数，可选。例如 `v-my-directive:foo` 中，参数为 `"foo"`。
+
+  - `modifiers`：一个包含修饰符的对象。例如：`v-my-directive.foo.bar` 中，修饰符对象为 `{ foo: true, bar: true }`。
+
+- `vnode`：Vue 编译生成的虚拟节点。移步 [VNode API](https://cn.vuejs.org/v2/api/#VNode-接口) 来了解更多详情。
+- `oldVnode`：上一个虚拟节点，仅在 `update` 和 `componentUpdated` 钩子中可用。
+
+
 
 ## computed计算属性
 
@@ -620,6 +774,8 @@ Vue.component('HmButton',HmButton)
 **技巧:**
 
 一般使用**局部注册**,如果发现确实是**通用组件**,再抽离到全局
+
+
 
 ## scoped样式冲突
 
@@ -1262,6 +1418,164 @@ export default {
    默认根级别的映射 **mapActions(['xxx'])**
 
    子模块的映射 **mapActions('模块名',['xxx'])** - 需要开启命名空间
+
+## ref与$refs
+
+**作用**:利用ref和$refs可以用于**获取dom元素**,或**组件实例**
+
+**特点**:查找范围→**当前组件内(更精确稳定)**
+
+(1)获取dom:
+
+1.目标标签 - 添加ref属性
+
+```vue
+<div ref="chartRef">
+    我是渲染图表的容器
+</div>
+```
+
+2.恰当时机,通过this.$refs.xxx,获取目标标签
+
+```vue
+mounted(){
+	console.log(this.$refs.chartRef)
+}
+```
+
+(2)获取组件
+
+1.目标组件 - 添加ref属性
+
+```vue
+<BaseForm ref="baseForm"></BaseForm>
+```
+
+2.恰当时机,通过this.$refs.xxx,获取目标组件,就可以调用组件对象里面的方法
+
+```vue
+this.$refs.baseForm.组件方法()
+```
+
+## 异步更新与$nextTick
+
+**$nextTick**:**等DOM更新后**,才会触发执行此方法里的函数体
+
+语法:this.$nextTick(函数体)
+
+```vue
+methods:{
+	handleEdit:(){
+		//1.显示输入框(异步dom更新)
+		this.isShowEdit = true
+		//2.让输入框聚焦
+		this.$nextTick(()=>{
+			console.log(this.$refs.inp)
+			this.$refs.inp.focus()
+		})
+	}
+}
+```
+
+**总结**:
+
+1. Vue是异步更新DOM的
+2. 想要在DOM更新完成之后做某件事,可以用`$nextTick`
+
+## 插槽
+
+### 默认插槽
+
+作用:让组件内部的一些**结构**支持**自定义**
+
+插槽基本语法:
+
+1. 组件内需要定制的结构部分,改用`<slot></slot>`站位
+2. 使用组件时,在标签内部传入结构替换slot
+
+### 后备内容(默认值)
+
+**插槽后备内容**:封装组件时,可以为预留的`<slot>`插槽提供**后备内容**(默认内容)
+
+**语法**:在`<slot>`标签内容,放置内容,作为默认内容
+
+**效果**:
+
+- 外部使用组件时,不传东西,则slot会显示后备内容
+- 外部使用组件时,传东西了,在slot整体会被替换掉
+
+### 具名插槽
+
+需求:一个组件内部有多处结构,需要外部传入标签,进行定制
+
+默认插槽:一个的定制位置
+
+**具名插槽简化语法**:
+
+1.多个slot使用name属性区分名字
+
+```vue
+<div>
+    <slot name="head"></slot>
+</div>
+<div>
+    <slot name="body"></slot>
+</div>
+<div>
+    <slot name="footer"></slot>
+</div>
+```
+
+2.template配合v-slot:名字来分发对应标签
+
+```vue
+<MyDialog>
+	<template #head>
+    	大标题
+    </template>
+	<template #body>
+    	内容
+    </template>
+	<template #footer>
+    	底部
+    </template>
+</MyDialog>
+```
+
+3.**`v-slot:插槽名`**可以简化为**`#插槽名`**
+
+### 作用域插槽
+
+作用域插槽:定义slot插槽的同时,是可以传递值的,给插槽上可以绑定数据,将来使用组件时可以用.
+
+**基本使用步骤**:
+
+1.给slot标签,以添加属性的方式传值
+
+```vue
+<slot :id="item.id" msg="测试文本"></slot>
+```
+
+2.所有添加的属性,都会被收集到一个对象中
+
+```vue
+{id:3,msg:'测试文本'}
+```
+
+3.在template,通过`#插槽名="obj"`接收,默认插槽名为**default**
+
+```vue
+<MyTable :list="list">
+	<template #default="obj">
+    	<button @click="del(obj.id)">
+            删除
+        </button>
+    </template>
+
+</MyTable>
+```
+
+
 
 ## 路由
 
@@ -2326,7 +2640,7 @@ const { count, msg } = storeToRefs(counterStore)
 
 1. 安装插件 pinia-plugin-persistedstate 
 
-   npm i pinia-pligin-persistedstate
+   npm i pinia-plugin-persistedstate
 
 2. main.js使用
 
@@ -2339,4 +2653,116 @@ const { count, msg } = storeToRefs(counterStore)
    ```
 
    
+
+## Router
+
+### 基础使用
+
+**router/index.ts**
+
+```ts
+import { createRouter, createWebHistory } from 'vue-router'
+//导入页面
+import Home from '@/views/TheHomePage.vue'
+import Article from '@/views/TheArticlePage.vue'
+
+export const router = createRouter({
+  history: createWebHistory(),
+  routes: [
+    {
+      path: '/home',
+      name: 'home',
+      component: Home
+    },
+    {
+      path: '/article',
+      name: 'article',
+      component: Article
+    },
+    {
+      path:'/',redirect:'/home'
+    }
+
+  ]
+})
+```
+
+**main.ts**
+
+```ts
+import { createApp } from 'vue'
+import {router} from './router/index'
+import App from './App.vue'
+
+
+const app = createApp(App)
+
+app.use(router)
+app.mount('#app')
+
+```
+
+**App.vue**
+
+```vue
+<script setup lang="ts">
+import { RouterView } from 'vue-router'
+import TheTab from '@/components/TheTab.vue'
+</script>
+
+<template>
+  <header>
+    <TheTab></TheTab>
+  </header>
+  <RouterView></RouterView>
+
+</template>
+
+<style scoped>
+
+</style>
+
+```
+
+**TheTab.vue**
+
+```vue
+<script setup lang="ts">
+//导入useRouter函数
+import { useRouter } from 'vue-router'
+const router = useRouter()
+
+//导航栏
+//导航列表类
+class tabListClass {
+    id:number //导航ID
+    label:string //导航名
+    src:string //跳转地址
+    constructor(id:number,label:string,src:string){
+        this.id=id
+        this.label=label
+        this.src=src
+    }
+}
+//导航列表数组
+const tabList = [
+    new tabListClass(0 , '文章' , 'article' ),
+    new tabListClass(1 , '主页' , 'home' ),
+    ]
+//跳转页面函数
+const turnToPage = (src:string)=>{
+    router.push(src)
+}
+</script>
+
+<template>
+    <div>
+        <div v-for="item in tabList" :key="item.id" @click="turnToPage(item.src)">{{ item.label }}</div>
+        
+    </div>
+</template>
+
+<style scoped></style>
+
+```
 
