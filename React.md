@@ -107,3 +107,163 @@ function App(){
 }
 ```
 
+# React中的事件绑定
+
+## React基础事件绑定
+
+语法:	**on + 事件名称 = { 事件处理程序 }**,整体上遵循驼峰命名法 
+
+```react
+function App () {
+    const clickHandler = () => {
+        console.log('button按钮点击了')
+    }
+    return (
+    	<button onClick={clickHandler}></button>
+    )
+}
+```
+
+## 使用事件对象参数
+
+语法:在事件回调函数中**设置形参e**
+
+```react
+function App () {
+    const clickHandler = (e) => {
+        console.log('button按钮点击了',e)
+    }
+    return (
+    	<button onClick={clickHandler}></button>
+    )
+}
+```
+
+## 传递自定义参数
+
+语法:事件绑定的位置改造成**箭头函数的写法**,在执行clickHandler实际处理业务函数的时候传递实参
+
+```react
+function App () {
+    const clickHandler = (name) => {
+        console.log('button按钮点击了',name)
+    }
+    return (
+    	<button onClick={()=>clickHandler('Jack')}></button>
+    )
+}
+```
+
+注意:不能直接写函数调用,这里事件绑定需要一个**函数引用**
+
+## 同时传递事件对象和自定义参数
+
+语法:在事件绑定的位置传递事件实参和自定义参数,clickHandler中声明形参,注意顺序对位
+
+```react
+function App () {
+    const clickHandler = (name,e) => {
+        console.log('button按钮点击了',name)
+    }
+    return (
+    	<button onClick={(e)=>clickHandler('Jack',e)}></button>
+    )
+}
+```
+
+# React组件的基础使用
+
+## 组件是什么
+
+概念:一个组件就是用户界面的一部分,它可以有自己的逻辑和外观,组件之间**可以相互嵌套,也可以使用多次**
+
+组件化开发可以让开发者像搭积木一样构建一个完整庞大的应用
+
+## React组件
+
+在React中,一个组件就是**首字母大写的函数**,内部存放了组件的逻辑和视图UI,渲染组件只需要把组件**当成标签书写**即可
+
+```react
+//1.定义组件
+function Button() {
+    //组件内部逻辑
+    return <button>click me</button>
+}
+//2.使用组件
+function App() {
+    return(
+    <div>
+    	{/*自闭合*/}
+    	<Button/>
+        {/*成对标签*/}
+        <Button></Button>
+    </div>
+    )
+}
+```
+
+# useState
+
+## useState基础使用
+
+`useState`是一个React Hook (函数) , 它允许我们向组件添加一个**状态变量**,从而控制影响组件的渲染结果
+
+本质:和普通的JS变量不同的是,状态变量一旦发生变化组件的视图UI也会跟着变化(数据驱动视图)
+
+```react
+const [count,setCount] = useState(0)
+
+const handleClick = () => {
+    //作用:1.用传入的新值修改count
+    //2.重新使用新的count渲染UI
+    setCount( count + 1 )
+}
+```
+
+1. useState是一个函数,返回值是一个数组
+2. 数组中的第一个参数是状态变量,第二个参数是set函数用来修改状态变量
+3. useState的参数将作为count的初始值
+
+## useState修改状态的规则
+
+**状态不可变**
+
+在React中,状态被认为是只读的,我们应该始终**替换它而不是修改它**,直接修改状态不能引发视图更新
+
+```react
+const [count,setCount] = useState(0)
+
+const handleClick = () => {
+    //直接修改无法引发视图更新
+    count++
+}
+```
+
+```react
+const handleClick = () => {
+    //作用:1.用传入的新值修改count
+    //2.重新使用新的count渲染UI
+    setCount( count + 1 )
+}
+```
+
+**修改对象状态**
+
+规则:对于对象类型的状态变量,应该始终传给set方法一个**全新的对象**来进行修改
+
+```react
+const [form,setForm] = useState(
+    {
+        name:'Jack',
+    }
+)
+const handleChangeName = () => {
+    setForm(
+    	{
+            ...form,
+            name:'John',
+        }
+    )
+}
+```
+
