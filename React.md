@@ -267,3 +267,121 @@ const handleChangeName = () => {
 }
 ```
 
+# 基础样式控制
+
+## 基础类名控制
+
+React组件基础的样式控制有俩种方式
+
+1.行内样式(不推荐)
+
+```react
+<div style={{color:'red'}}>this is div</div>
+<div style={style}>this is div</div>
+```
+
+2.class类名控制
+
+```react
+//index.css
+.foo{
+    color:red
+}
+//App.js
+import './index.css'
+
+function App(){
+    return (
+    	<div>
+        	<span className='foo'> this is span </span>
+        </div>
+    )
+}
+```
+
+## classnames工具优化类名控制
+
+`classnames`是一个简单JS库,可以非常方便的通过条件动态控制class类名的显示
+
+```powershell
+
+npm install classnames
+
+yarn add classnames
+
+```
+
+
+
+```react
+import classNames from 'classnames'
+
+//语法
+// classname={classnames('nav-item',{active:type===item.type})}
+//'nav-item'为静态类名
+//active为动态类名,在返回值为true时显示
+```
+
+# 受控表单绑定
+
+概念:使用React组件的状态(useState)控制表单的状态
+
+1.准备一个React状态值
+
+```react
+const [value,setValue] = useState('')
+```
+
+2.通过value属性绑定状态,通过onChange属性绑定状态同步的函数
+
+```react
+<input
+	type="text"
+    value={value}
+    onChange={(e)=>setValue(e.target.value)}
+    ></input>
+```
+
+# React获取DOM
+
+在React组件中获取/操作DOM,需要使用`useRef`钩子函数,分为两步:
+
+1.使用useRef创建ref对象,并与JSX绑定
+
+```react
+const inputRef = useRef(null)
+
+
+<input type="text" ref={inputRef} />
+```
+
+2.在DOM可用时,通过inputRef.current拿到DOM对象
+
+```react
+console.log(inputRef.current)
+```
+
+示例:
+
+```react
+//React中获取DOM
+import { useRef } from "react"
+//1.useRef生成ref对象 绑定dom标签身上
+
+//2.dom可用时,ref.current获取dom
+//渲染完毕之后dom生成之后才可用
+
+function App(){
+    const inputRef = useRef(null)
+    const showDom = () => {
+        console.log(inputRef.current)
+    }
+    return (
+    	<div>
+        	<input type="text" ref={inputRef}></input>
+            <button onClick={showDom}>获取dom</button>
+        </div>
+    )
+}
+```
+
