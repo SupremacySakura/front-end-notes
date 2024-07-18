@@ -652,3 +652,364 @@ function App () {
 
 1. 只能在组件中或者其他自定义Hook函数中调用
 2. 只能在组件的顶层调用,不能嵌套在if,for,其他函数中
+
+# Redux
+
+## 快速上手
+
+**什么是Redux**
+
+`Redux`是React最常用的**集中状态管理工具**,类似于Vue中Pinia(Vuex),**可以独立与框架运行**
+
+作用:通过集中管理的方式管理应用的状态
+
+**Redux快速体验**
+
+需求:不和任何框架绑定,不使用任何构建工具,使用纯Redux实现计数器
+
+使用步骤:
+
+1. 定义一个`reducer`函数(根据当前想要做的修改返回一个新的状态)
+2. 使用`createStore`方法传入一个reducer函数,生成一个store实例对象
+3. 使用store实例的`subscribe`方法订阅数据的变化(数据一旦改变,可以得到通知)
+4. 使用store实例的`dispatch`方法提交action对象,触发数据变化(告诉reducer你想怎么修改数据)
+5. 使用store实例的`getState`方法获取最新的状态数据更新到视图中
+
+```javascript
+//1.定义reducer函数
+
+//作用:根据不同的action对象,返回不同的新的state
+
+//state:管理的数据初始状态
+
+//action:对象type标记当前想要做什么样的修改
+
+function reducer (state = { count: 0 },action) {
+
+	if(action.type === 'INCREMENT'){
+		return { count:state.count + 1 }
+	}
+    if(action.type === 'DECREMENT'){
+        return { count:state.count - 1 }
+    }
+	return state
+}
+//2.使用reducer函数生成store实例
+const store = Redux.createStore(reducer)
+
+//3.通过store实例的subscribe订阅数据变化
+//回调函数可以在每次state发生变化的时候自动执行
+store.subscribe(() => {
+    console.log('state变化了',store.getState())
+    document.getElementById('count').innerText = store.getState().count
+})
+
+//4.通过store实例的dispatch函数提交action更改状态
+const inBtn = document.getElementById('increment')
+inBtn.addEventListener('click',()=>{
+    //增
+    store.dispatch(
+    	{type:'INCREMENT'}
+    )
+})
+const dBtn = document.getElementById('decrement')
+inBtn.addEventListener('click',()=>{
+    //减
+    store.dispatch(
+    	{type:'DECREMENT'}
+    )
+})
+
+```
+
+**Redux管理数据流程**
+
+1. state - 一个对象,存放着我们管理的数据状态
+2. action - 一个对象,用来描述你想怎么修改数据
+3. reducer - 一个函数,根据action的描述生成一个新的state
+
+## Redux与React-环境准备
+
+**配套工具**
+
+在React中使用Redux,官方要求安装其他俩个插件 - Redux Toolkit 和 react-redux
+
+1.Redux Toolkit (RTK) - 官方推荐的编写Redux逻辑的方式,是一套工具的集合集,**简化书写方式**
+
+| 简化store的配置方式 | 内置immer支持可变式状态修改 | 内置thunk更好的异步创建 |
+| ------------------- | --------------------------- | ----------------------- |
+
+2.react-redux - 用来 **链接 Redux 和 React组件** 的中间件
+
+**配置基础环境**
+
+1.使用 CRA 快速创建 React 项目
+
+```powershell
+npx creat-react-app react-redux
+```
+
+2.安装配套工具
+
+```powershell
+npm i @reduxjs/toolkit react-redux
+```
+
+3.启动项目
+
+```powershell
+npm run start
+```
+
+**整体路径熟悉**
+
+1.Redux store 配置
+
+配置counterStore模块
+
+配置store并且组合counterStore模块
+
+2.React组件
+
+注入store(react-redux)
+
+使用store中的数据
+
+修改store中的数据
+
+## Redux与React-实现counter
+
+### **使用React Toolkit 创建 counterStore**
+
+```javascript
+// counterStore.js
+
+import { createSlice } from '@reduxjs/toolkit'
+
+const counterStore = creatSlice({
+    name:'counter',
+    //初始状态数据
+    initialState:{
+        count:0
+    },
+    //修改数据的方法
+    reducer:{
+        increment (state) {
+        	state.count++
+        },
+        decrement (state) {
+            state.count--                   
+      	},                     
+    }
+})
+
+//结构出创建action对象的函数 {actionCreater}
+const { increment, decrement } = counterStore.action
+//获取reducer函数
+const counterReducer = counterStore.reducer
+//导出创建action对象的函数和reducer函数
+export { increment, decrement }
+export default counterReducer
+```
+
+```javascript
+// store/index.js
+import { configureStore } from '@reduxjs/toolkit'
+
+import counterReducer from "./modules/counterStore"
+
+//创建根store组合子模块
+const store = configureStore({
+    reducer:{
+        counter:counterReducer
+    }
+})
+export default store
+```
+
+```react
+// index.js
+import store from './store'
+
+import { Provider } from 'react-redux'
+    
+    
+const root = ReactDOM.creatRoot(document.getElementById('root'))
+root.render(
+	<React.StrictMode>
+    	<Provider store={store}>
+        	<App />
+        </Provider>
+    </React.StrictMode>
+)
+```
+
+### **React组件使用store的数据**
+
+在React组件中使用store中的数据,需要用到一个 钩子函数 - `useSelector`,它的作用是把store中的数据映射到组件中
+
+```react
+import { useSelector } from 'react-redux'
+function App () {
+    const { count } = useSelector(state => state.counter)
+	//counter子模块
+    return (
+    	<div className="App">
+        	{ count }
+        </div>
+    )
+}
+
+```
+
+### React组件中修改store中的数据
+
+React组件中修改store中的数据需要借助另一个hook函数 - `useDispatch`, 它的作用是生成提交action对象的dispatch函数
+
+```react
+import { useDispatch, useSelector } from 'react-redux'
+//导入创建action对象的方法
+import { decrement, increment } from './store/modules/counterStore'
+function App () {
+    const { count } = useSelector(state => state.counter)
+	//得到dispatch函数
+    const dispatch = useDispatch()
+    return (
+        <button onClick={()=>dispatch(decrement())}></button>
+    	<div className="App">
+        	{ count }
+        </div>
+        <button onClick={()=>dispatch(increment())}></button>
+    )
+}
+
+```
+
+### React组件中提交action传参
+
+在reducer的同步方法中**添加action对象参数**,在**调用actionCreater的时候传递参数**,参数会被传递到**action对象的payload属性**上
+
+```javascript
+// counterStore.js
+
+import { createSlice } from '@reduxjs/toolkit'
+
+const counterStore = creatSlice({
+    name:'counter',
+    //初始状态数据
+    initialState:{
+        count:0
+    },
+    //修改数据的方法
+    reducer:{
+        increment (state) {
+        	state.count++
+        },
+        decrement (state) {
+            state.count--                   
+      	},
+        addToNum(state,action){
+            state.count = action.payload
+        }
+    }
+})
+
+//结构出创建action对象的函数 {actionCreater}
+const { increment, decrement, addToNum } = counterStore.action
+//获取reducer函数
+const counterReducer = counterStore.reducer
+//导出创建action对象的函数和reducer函数
+export { increment, decrement, addToNum }
+export default counterReducer
+```
+
+```react
+// App.js
+import { useDispatch, useSelector } from 'react-redux'
+//导入创建action对象的方法
+import { decrement, increment, addToNum } from './store/modules/counterStore'
+function App () {
+    const { count } = useSelector(state => state.counter)
+	//得到dispatch函数
+    const dispatch = useDispatch()
+    return (
+        <button onClick={()=>dispatch(decrement())}>-</button>
+    	<div className="App">
+        	{ count }
+        </div>
+        <button onClick={()=>dispatch(increment())}>+</button>
+        <button onClick={()=>dispatch(addToNum(10))}>add to 10</button>
+    )
+}
+```
+
+### Redux与React异步状态操作
+
+(1)创建store的写法保持不变,配置好同步修改状态的方法
+
+(2)单独封装一个函数,在函数内部return一个新函数,在新函数中
+
+1. 封装异步请求获取数据
+2. 调用同步actionCreater传入异步数据生成的action对象,并使用dispatch提交
+
+(3)组件中dispatch的写法保持不变
+
+```javascript
+// channelStore.js
+import { createSlice } from "@reduxjs/toolkit"
+import axios from 'axios'
+
+const channelStore = createSlice({
+    name:'channel'
+    initialState;{
+    	channelList:[]
+	},
+    reducer:{
+        setChannels ( state, action ) {
+            state.ChannelList = action.payload
+        } 
+    }
+})
+
+//异步请求部分
+const { setChannels } = channelStor.action
+const fetchChannelList = () => {
+    return async (dispatch) => {
+        const res = await axios.get('http://geek.itheima.net/v1_0/channels')
+        dispatch(setChannels(res.data.channels))
+    }
+}
+export { fetchChannelList }
+export default channelReducer
+```
+
+```react
+// App.js
+import { useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+//导入创建action对象的方法
+import { decrement, increment, addToNum } from './store/modules/counterStore'
+import { fetchChannelList } from './store/modules/channelStore'
+function App () {
+    const { count } = useSelector(state => state.counter)
+    const { channelList } = useSelector(state => state.channel)
+	//得到dispatch函数
+    const dispatch = useDispatch()
+    //使用useEffect触发异步请求执行
+    useEffect(()=>{
+        dispatch(fetchChannelList)
+    },[dispatch])
+    return (
+        <button onClick={()=>dispatch(decrement())}>-</button>
+    	<div className="App">
+        	{ count }
+        </div>
+        <button onClick={()=>dispatch(increment())}>+</button>
+        <button onClick={()=>dispatch(addToNum(10))}>add to 10</button>
+        <ul>
+        	{ChannelList.map(item => <li key={item.id}>{item.name}</li>)}
+        </ul>
+    )
+}
+```
+
