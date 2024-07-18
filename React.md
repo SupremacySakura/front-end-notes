@@ -204,7 +204,7 @@ function App() {
 
 # useState
 
-## useState基础使用
+## useState-基础使用
 
 `useState`是一个React Hook (函数) , 它允许我们向组件添加一个**状态变量**,从而控制影响组件的渲染结果
 
@@ -224,7 +224,7 @@ const handleClick = () => {
 2. 数组中的第一个参数是状态变量,第二个参数是set函数用来修改状态变量
 3. useState的参数将作为count的初始值
 
-## useState修改状态的规则
+## useState-修改状态的规则
 
 **状态不可变**
 
@@ -385,3 +385,270 @@ function App(){
 }
 ```
 
+# 组件通信
+
+## 父传子-基础实现
+
+理解组件通信:组件通信就是组件之间的数据传递,根据组件嵌套关系的不同,有不同的通信方法
+
+实现步骤:
+
+1. 父组件传递数据-在子组件标签绑定属性
+2. 子组件接收数据-子组件通过`props`参数接收数据
+
+```react
+function Son (props) {
+    //props:对象里面包含; 父组件传递过来的所有数据
+    console.log(props)
+    return (<div>this is son ,{props.name}</div>)
+}
+
+function App () {
+    const name = 'this is app name'
+    return(
+    	<div>
+        	<Son name={name}></Son>
+        </div>
+    )
+}
+```
+
+## 父传子-props说明
+
+1.`props`可以传递任意的数据
+
+数字,字符串,布尔值,数组,对象,函数,JSX
+
+```react
+<Son
+	name={appName}
+    age={20}
+    isTrue={false}
+    list={['Vue','React']}
+    obj={{name:'Jack'}}
+    cb={()=>console.log(123)}
+    child={<span>this is span child</span>}
+>
+</Son>
+```
+
+2.props是只读对象
+
+子组件**只能读取props中的数据**,不能进行直接修改,父组件的数据只能由父组件修改
+
+## 父传子-children说明
+
+场景:当我们想要把内容嵌套在子组件标签中时,父组件会自动在名为children的prop属性中接收该内容
+
+```react
+<Son>
+	<span>this is span</span>
+</Son>
+
+//props.children
+```
+
+## 子传父
+
+核心思路:在子组件中调用父组件中的函数并传递参数
+
+```react
+//父组件
+function App () {
+    const getMsg = (msg) => console.log(msg)
+    return (
+    	<div>
+        	<Son onGetMsg={getMsg}></Son>
+        </div>
+    )
+}
+```
+
+```react
+//子组件
+function Son ({onGetMsg}) {
+    const sonMsg = 'this is son msg'
+    return (
+    	<div>
+        	<button onClick={() => onGetMsg(sonMsg)}></button>
+        </div>
+    )
+}
+```
+
+## 兄弟组件通信
+
+**使用状态提升实现兄弟组件通信**
+
+实现思路:借助"状态提升"机制,通过父组件进行兄弟组件之间的数据传递
+
+1.一个子组件通过子传父的方式把数据传递给父组件App
+
+2.App拿到数据后通过父传子的方式再传递给另一个子组件
+
+## 使用context机制跨层传递数据
+
+实现步骤:
+
+1. 使用`creatContext`方法创建一个上下文对象Ctx
+2. 在顶层组件(App)中通过`Ctx.Provider`组件提供数据
+3. 在底层组件(B)中通过`useContext`钩子函数获取消费数据
+
+```react
+import { createContext } from "react"
+
+//1.createContext方法创建一个上下文对象
+const MsgContext = createContext()
+
+//2.在顶层组件 通过Provider组件提供数据
+
+//3.在底层组件 通过useContext钩子函数使用数据
+
+function A () {
+    return(
+    	<div>
+        	<B/>
+        </div>
+    )
+}
+function B () {
+    const msg = useContext(MsgContext)
+    return (
+    	<div>
+        	this is B component,{msg}
+        </div>
+    )
+}
+
+function App () {
+    const msg = 'this is app msg'
+    return (
+    	<div>
+        	<MsgContext.Provider value = {msg}>
+            	this is App
+                <A/>
+            </MsgContext.Provider>
+        </div>
+    )
+}
+```
+
+# useEffect
+
+## useEffect-概念理解与基础使用
+
+1.useEffect的概念理解
+
+`useEffect`是一个React Hook函数,用于在React组件中创建不是由事件引起而是**由渲染本身引起的操作**,比如发送AJAX请求,更改DOM等等
+
+2.useEffec的基础使用
+
+**需求**:在组件渲染完毕之后,立刻从服务端获取频道列表数据并显示到页面中
+
+**语法**:
+
+```react
+useEffect(()=>{},[])
+```
+
+参数1是一个函数,可以把他叫做**副作用函数**,在函数内部可以放置需要执行的操作
+
+参数2是一个数组(可选参),在数组里面放置依赖项,不同的依赖项会影响第一个参数函数的执行,**当是一个空数组的时候,副作用函数只会在组件渲染完毕之后执行一次**
+
+```react
+import { useEffect, useState } from "react"
+
+cosnt URL = 'http://geek.itheima.net/v1_0/channels'
+
+function App () {
+    //创建一个状态数据
+    const [ List , setList ] = useState([])
+    useEffect(()=>{
+        //额外的操作 获取频道列表
+        async function getList () {
+            const res = await fetch(URL)
+            const jsonRes = await res.json()
+            console.log(jsonRes)
+            setList(jsonRes.data.channels)
+        }
+        getList()
+    },[])
+    return(
+    	<div>
+        	this is app 
+            <ul>
+            	{list.map(item => <li key = {item.id}>{item.name}</li>)}
+            </ul>
+        </div>
+    )
+}
+```
+
+## useEffect-不同依赖项说明
+
+useEffect副作用函数执行的时机存在多种情况,根据**传入的依赖项不同**,会有不同的执行表现
+
+|     依赖项     |        副作用函数执行时机         |
+| :------------: | :-------------------------------: |
+|   没有依赖项   |    组件初始渲染+组件更新时执行    |
+|   空数组依赖   |      只在初始渲染时执行一次       |
+| 添加特定依赖项 | 组件初始渲染+特效依赖项变化时执行 |
+
+## useEffect-清除副作用
+
+在useEffect中编写的**由渲染本身引起的对接组件外部的操作**,社区页经常把它叫做**副作用操作**,比如在useEffect中开启了一个定时器,我们想在组件卸载时把这个定时器清理掉,这个过程就是清理副作用
+
+语法:
+
+```react
+useEffect(()=>{
+    //实现副作用的操作逻辑
+    const timer = setInterval(()=>{
+        console.log('定时器执行中...')
+    },1000)
+    return()=>{
+        //清除副作用逻辑
+        clearInterval(timer)
+    }
+},[])
+```
+
+# 自定Hook实现
+
+概念:自定义Hook是以**use打头的函数**,通过自定义Hook函数可以用来实现**逻辑的封装和复用**
+
+```react
+//问题:布尔值切换的逻辑 当前组件耦合在一起的 不方便使用
+
+//解决思路:自定义hook
+
+import { useState } from "react"
+
+function useToggle () {
+    //可复用的逻辑代码
+    const [value,setValue] = useState(true)
+    const toggle = () => setValue(!value)
+    //哪些状态和回调函数需要在其他组件中使用return
+    return {
+        value,
+        toggle
+    }
+}
+
+function App () {
+    const { value, toggle } = useToggle()
+    return (
+    	<div>
+        	{value && <div>this is div</div>}
+            <button onClick={toggle}>toggle</button>
+        </div>
+    )
+}
+```
+
+# ReactHooks使用规则
+
+使用规则
+
+1. 只能在组件中或者其他自定义Hook函数中调用
+2. 只能在组件的顶层调用,不能嵌套在if,for,其他函数中
