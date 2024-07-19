@@ -1013,3 +1013,260 @@ function App () {
 }
 ```
 
+# ReactRouter
+
+## 快速上手
+
+**什么是前端路由**
+
+一个路径path对应一个组件component当我们浏览器在中访问一个path的时候,path对应的组件会在页面中进行渲染
+
+```javascript
+const routes = [
+    {
+        path:'/about'
+        component:About
+    },
+    {
+        path:'/article'
+        component:Article
+    },
+]
+```
+
+**创建路由开发环境**
+
+1.创建项目并安装所有依赖
+
+```powershell
+npx create-react-app react-router-pro
+npm i
+```
+
+2.安装最新的ReactRouter包
+
+```powershell
+npm i react-router-dom
+```
+
+3.启动项目
+
+```powershell
+npm run start
+```
+
+**快速开始**
+
+需求:创建一个可以切换登录页和文章页的路由系统
+
+```react
+//index.js
+
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+
+//1.创建router实例对象并且配置路由对应关系
+const router = createBrowserRouter ([
+    {
+        path:'/login',
+        element:<div>我是登录页</div>
+    },
+    {
+        path:'/article'
+        element:<div>我是文章页</div>
+    }
+])
+const root = ReactDOM.creatRoot(document.getElementById('root'))
+root.render(
+	<React.StrictMode>
+    	<RouterProvider router={router}></RouterProvider>
+    </React.StrictMode>
+)
+```
+
+## 抽象路由模块
+
+```javascript
+//router/index.js
+import { createBrowserRouter } from 'react-router-dom'
+
+//1.创建router实例对象并且配置路由对应关系
+const router = createBrowserRouter ([
+    {
+        path:'/login',
+        element:<div>我是登录页</div>
+    },
+    {
+        path:'/article'
+        element:<div>我是文章页</div>
+    }
+])
+
+export default router
+```
+
+```react
+import router from './router/index.js'
+
+import { RouterProvider } from 'react-router-dom'
+
+
+
+const root = ReactDOM.creatRoot(document.getElementById('root'))
+root.render(
+	<React.StrictMode>
+    	<RouterProvider router={router}></RouterProvider>
+    </React.StrictMode>
+)
+
+```
+
+## 路由导航跳转
+
+**什么是路由导航跳转**
+
+路由系统中的多个路由之间需要进行**路由跳转**,并且在跳转的同时有可能需要**传递参数进行通信**
+
+### 声明式导航
+
+声明式导航是指通过在模板中通过`<Link/>`**组件描述出要跳转到哪里去**
+
+```react
+<Link to="/article">文章</Link>
+```
+
+语法说明:通过给组件的**to属性指定要调到路由的path**,组件会被渲染为浏览器支持的a链接,如果需要传参直接**通过字符串拼接的方式拼接参数**即可
+
+### 编程式导航
+
+编程式导航是指通过`useNavigate`钩子得到导航方法,然后通过**调用方法以命令式的形式**进行路由跳转
+
+```react
+import { useNavigate } from "react-router-dom"
+
+const Login = () => {
+    const navigate = useNavigate()
+    return(
+    	<div>
+        	我是登录页
+            <button onClick={() =>navigate('/article') }>跳转至文章</button>
+        </div>
+    )
+}
+```
+
+语法说明:通过调用navigate方法传入地址path实现跳转
+
+## 导航跳转传参
+
+1.`searchParams`传参
+
+```react
+import { useNavigate } from "react-router-dom"
+navigate('/article?id=1001&name=jack')
+```
+
+```react
+import { useSearchParams } from "react-router-dom";
+const [params] =useSearchParams()
+let id = params.get('id')
+```
+
+2.`params`传参
+
+```react
+import { useNavigate } from "react-router-dom"
+navigate('/article/1001')
+```
+
+```react
+import { useParams } from "react-router-dom"
+const params = useParams()
+let id = params.id
+```
+
+```javascript
+//修改路由配置
+{
+        path:'/article/:id'
+        element:<div>我是文章页</div>
+    }
+```
+
+# 别名路径配置
+
+1.路径解析配置(webpack),把@/解析为src/
+
+2.路径联系配置(VSCode),VSCode在输入@/时,自动联想出来对应src/下的子级目录
+
+## 路径解析配置
+
+CRA本身把webpack配置包装到了黑盒里无法直接修改,需要借助一个插件-`craco`
+
+配置步骤:
+
+1.安装craco
+
+```powershell
+npm i -D @craco/craco
+```
+
+2.项目根目录下创建配置文件
+
+craco.config.js
+
+3.配置文件中添加路径解析配置
+
+```javascript
+// 配置信息
+const path = require('path')
+
+module.exports = {
+  // webpack 配置
+  webpack: {
+    // 配置别名
+    alias: {
+      // 约定：使用 @ 表示 src 文件所在路径
+      '@': path.resolve(__dirname, 'src')
+    }
+  }
+}
+
+```
+
+4.包文件中配置启动和打包命令
+
+```json
+// 将 start/build/test 三个命令修改为 craco 方式
+"scripts": {
+  "start": "craco start",
+  "build": "craco build",
+  "test": "craco test",
+  "eject": "react-scripts eject"
+},
+
+```
+
+
+
+## 联系路径配置
+
+VSCode的联想配置,需要我们在项目目录下添加**jsconfig.json**文件,加入配置之后VSCode会自动读取配置帮助我们自动联想提示
+
+配置步骤:
+
+1.根目录下新增配置文件-jsconfig.json
+
+2.添加路径提升配置
+
+```json
+{
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  }
+}
+
+```
+
