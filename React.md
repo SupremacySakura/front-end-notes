@@ -1270,3 +1270,221 @@ VSCode的联想配置,需要我们在项目目录下添加**jsconfig.json**文�
 
 ```
 
+# useReducer
+
+**作用**:和useState作用类似,用来管理**相对复杂**的数据状态
+
+## 基础用法
+
+1.定义一个reducer函数(根据不同的action返回不同的新状态)
+
+```react
+function reducer (state,action) {
+    //	根据不同的action type 返回新的state
+    switch (action.type) {
+            case:'INC':
+            	return state + 1
+            case:'DEC':
+            	return state - 1
+        	default:
+            	return state
+    }
+}
+```
+
+2.在组件中调用useReducer,并传入reducer函数和状态的初始值
+
+```react
+const [ state,dispatch ] = useReducer(reducer,0)
+```
+
+3.事件发生时,通过dispatch函数分派一个action对象(通知reducer要返回哪个新状态并且渲染UI)
+
+```react
+dispatch({ type: 'INC' })
+```
+
+## 分派action时传参
+
+```react
+dispatch({
+    type:'SET'
+    payload:100
+})
+```
+
+```react
+function reducer (state,action) {
+    //	根据不同的action type 返回新的state
+    switch (action.type) {
+            case:'INC':
+            	return state + 1
+            case:'DEC':
+            	return state - 1
+            case;'SET':
+            	return action.payload
+        	default:
+            	return state
+}
+```
+
+# useMemo
+
+**作用**:在组件每次重新渲染的时候缓存计算的结果(类似于计算属性)
+
+```react
+function App () {
+    const [state1,setCount1] = useState(0)
+    //result只会在count1发生改变时重新计算
+    const result = useMemo(()=>{
+        //返回计算得到的结果
+        return fib(count1)
+    },[count1])
+    return(
+    	<div>
+        	<button onClick={()=>setCount1(count1+1)}></button>
+        </div>
+    )
+}
+```
+
+# React.memo
+
+**作用**:允许组件在Props没有改变的情况下跳过渲染
+
+React组件默认的渲染机制,只要父组件重新渲染子组件就会重新渲染(会造成资源浪费)
+
+## 基础语法
+
+```react
+import { memo } from "react"
+const MemoComponent = memo(function SomeComponent(props){
+    // ... 
+})
+                           
+                           
+```
+
+说明:经过memo函数包裹生成的缓存组件只有在props发生变化的时候才会重新渲染
+
+## props的比较机制
+
+机制:在使用`memo`缓存组件之后,React会对**每一个prop**使用**Object.is**比较新值和老值,返回true,表示没有变化
+
+
+
+prop是简单类型
+
+Object.is(3,3) => true 没有变化
+
+
+
+prop是引用类型(对象/数组)
+
+
+
+Object.is([],[]) => false,React只关心引用是否变化
+
+# useCallback
+
+**作用**:在组件多次重新渲染的时候缓存函数
+
+## 基础语法
+
+```react
+//没使用useCallback
+const Input = memo(function Input ({onChange}){
+    console.log('子组件重新渲染了')
+    return(<input type="text" onChange={(e)=>onChange(e.target.value)}></input>)
+})
+                   
+function App () {
+    //传给子组件的函数
+    const changeHandler = (value) => console.log(value)
+    //触发父组件重新渲染的函数
+    const [count,setCount] = useState(0)
+    return(
+    	<div classname="App">
+            <Input onChange={changeHandler}></Input>
+            <button onClick={()=>setCount(count+1)}>{count}</button>
+        </div>
+    )
+}                   
+```
+
+```react
+//使用useCallback
+const Input = memo(function Input ({onChange}){
+    console.log('子组件重新渲染了')
+    return(<input type="text" onChange={(e)=>onChange(e.target.value)}></input>)
+})
+                   
+function App () {
+    //传给子组件的函数
+    const changeHandler = useCallback((value) => console.log(value),[])
+    //触发父组件重新渲染的函数
+    const [count,setCount] = useState(0)
+    return(
+    	<div classname="App">
+            <Input onChange={changeHandler}></Input>
+            <button onClick={()=>setCount(count+1)}>{count}</button>
+        </div>
+    )
+}                   
+          
+```
+
+说明:使用useCallback包裹函数之后,函数可以保证在App**重新渲染的时候保持引用稳定**
+
+# forwardRef
+
+场景说明:父组件通过ref获取到子组件内部的input元素让其聚焦
+
+```react
+import { forwardRef, useRef } from "react"
+
+const Son = forwardRef((props,ref)=>{
+    return (
+    	<input type="text" ref={ref}></input>
+    )
+})
+
+function App () {
+    const sonRef =useRef(null)
+    const showRef = () => {
+        console.log(sonRef)
+    }
+    return (
+    <>
+        <Son ref={sonRef}></Son>
+        <button onClick={showRef}>focus</button>
+    </>
+    )
+}
+
+```
+
+# useInperativeHandle
+
+场景说明:父组件通过ref调用子组件内部的focus方法实现聚焦
+
+```react
+//子组件
+const Input = forwardRef((props,ref)=>{
+    const inputRef = useRef(null)
+    //实现逻辑聚焦函数
+    const focusHandler = () => {
+        inputRef.current.focus()
+    }
+    //暴露函数给父组件调用
+    useImperativeHandler(ref,() => {
+        return {
+            focusHandler
+        }
+    })
+    return(
+    	<input type="text" ref={ inputRef }></input>
+    )
+})
+```
+
