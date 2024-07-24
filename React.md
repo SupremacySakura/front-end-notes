@@ -1488,3 +1488,203 @@ const Input = forwardRef((props,ref)=>{
 })
 ```
 
+# Class类组件
+
+## 类组件的基础结构
+
+类组件就是通过**JS中的类来组织的代码**
+
+```react
+class Counter extends Component {
+    //自定义状态变量
+    state = {
+        count: 0,
+    }
+    //事件回调
+    clickHandler = () => {
+        this.setState({
+            count:this.state.count + 1
+        })
+    }
+    
+    //UI模板
+    render () {
+        return <button onClick={this.clickHandler}>{this.state.count}</button>
+    }
+}
+```
+
+1. 通过类属性`state`定义状态数据
+2. 通过`setState`方法来修改数据
+3. 通过`render`来写UI模板(JSX语法一致)
+
+## 类组件生命周期函数
+
+概念:组件从创建到销毁的**各个阶段自动执行的函数**就是生命周期函数
+
+1. `componentDidMount`:组件挂载完毕自动执行 - 异步数据获取
+2. `componentWillUnmount`:组件卸载时自动执行 - 清理副作用
+
+```react
+class Counter extends Component {
+   	//生命周期函数
+    //组件渲染完毕执行一次 发送网络请求
+    componentDidMount () {
+        console.log('组件渲染完毕了,请求发送起来')
+        //开启定时器
+        this.timer = setInterval(()=>{
+            console.log('定时器运行中')
+        })
+    }
+    //组件卸载的时候自动执行 副作用清理的工作 清除定时器 清除事件绑定
+    componentWillUnmount () {
+        console.log('组件被卸载了')
+        
+        clearInterval(this.timer)
+    }
+    //UI模板
+    render () {
+        return <div>I am son</div>
+    }
+}
+```
+
+## 类组件的组件通信说明
+
+概念:类组件和Hooks编写的组件在组件通信上的**思路完全一致**
+
+1. 父传子:通过prop绑定数据
+2. 子传父:通过prop绑定父组件中的函数,子组件调用
+3. 兄弟通信:状态提升,通过父组件做桥接
+
+```react
+//子组件
+class Son extends Component {
+    render () {
+        //使用this.props.msg
+        return <>
+        	<div>我是子组件 {this.props.msg}</div>
+        	<button onClick={()=>this.props.onGetMsg('我是子组件中的数据')}></button>
+        </>
+    }
+}
+
+//父组件
+class Parent extends Component {
+    state = {
+        msg: 'this is parent msg'
+    }
+    
+    getSonMsg = (sonMsg) => {
+        console.log(sonMsg)
+    }
+    
+    
+    render () {
+        return <div>我是父组件<Son msg={this.state.msg} onGetMsg={this.getSonMsg}></Son></div>
+    }
+}
+```
+
+# zustand
+
+## 基础用法
+
+```react
+//zustand
+import { create } from 'zustand'
+
+//1.创建store
+
+const useStore = create((set)=>{
+    return {
+        //状态数据
+        count:0,
+        //修改状态数据的方法
+        inc:()=>{
+            set((state)=>({count:state.count+1}))
+        }
+    }
+})
+
+//2.绑定store到组件
+
+function App () {
+    const { count, inc } = useStore()
+    return (
+    <>
+    	<button onClick={inc}>{count}</button>    
+    </>
+    )
+}
+```
+
+## 异步支持
+
+对于异步的支持不需要特殊的操作,直接在函数中编写异步逻辑,最后只需要**调用set方法传入最新状态**即可
+
+```react
+//zustand
+import { create } from 'zustand'
+
+const useStore = create((set)=>{
+    return {
+        //状态数据
+        channelList:[],
+        //异步方法
+        fetchChannelList:async()=>{
+            const res = await fetch(URL)
+            const jsonData = await res.json()
+            //调用set方法更新状态
+            set({
+                channelList:jsonData.data.channels
+            })
+        }
+    }
+})
+
+
+```
+
+## 切片模式
+
+场景:当单个store比较大时,可以采用**切片模式**进行模块拆分组合,类似于模块化
+
+```react
+//zustand
+import { create } from 'zustand'
+
+//创建counter相关切片
+const createCounterStore = (set) => {
+    return {
+        count:0,
+        setCount:()=>{
+            set(state=>({ count:state.count + 1}))
+        }
+    }
+}
+
+//创建channel相关切片
+const createChannelStore = (set)=>{
+    return {
+        //状态数据
+        channelList:[],
+        //异步方法
+        fetchChannelList:async()=>{
+            const res = await fetch(URL)
+            const jsonData = await res.json()
+            //调用set方法更新状态
+            set({
+                channelList:jsonData.data.channels
+            })
+        }
+    }
+}
+
+//组合切片
+const useStore = create((...a)=>({
+    ...createCounterStore(..a)
+    ...createChannelStore(..a)
+}))
+```
+
